@@ -2,6 +2,9 @@ import discord
 from dotenv import load_dotenv
 from os import environ as env
 from deepgram import DeepgramClient, PrerecordedOptions, FileSource
+import json
+import glob
+import os
 
 bot = discord.Bot()
 connections = {}
@@ -15,6 +18,7 @@ options = PrerecordedOptions(
     utterances=True,
     punctuate=True,
     diarize=True,
+    detect_language=True
 )
 
 discord.opus.load_opus(
@@ -48,7 +52,8 @@ async def once_done(
         f"<@{user_id}>" for user_id, audio in sink.audio_data.items()
     ]
     await sink.vc.disconnect()  # Disconnect from the voice channel.
-    raw_files = [audio.file for user_id, audio in sink.audio_data.items()]
+
+    words = []
 
     # save the file to disk
     for user_id, audio in sink.audio_data.items():
@@ -58,18 +63,21 @@ async def once_done(
 
         response = deepgram.listen.prerecorded.v("1").transcribe_file(payload, options)
 
-        print(response.to_json(indent=4))
+        words = response['results']['channels'][0]['alternatives'][0]['words']
 
-        # dump response to json file
-        with open(f"{user_id}.json", "w") as outfile:
-            outfile.write(response.to_json(indent=4))
+        # add the speaker to the words
+        for word in words: 
+            word = word.to_dict()
+            word.speaker = user_id
+            words.append(word)
 
-    files = [
-        discord.File(audio.file, f"{user_id}.{sink.encoding}")
-        for user_id, audio in sink.audio_data.items()
-    ]  # List down the files.
+    # sort the words by start time
+    words.sort(key=lambda x: x['start'])
+
+    print(words)
+
     await channel.send(
-        f"finished recording audio for: {', '.join(recorded_users)}.", files=files
+        f"finished recording audio for: {', '.join(recorded_users)}."
     )  # Send a message with the accumulated files.
 
 
