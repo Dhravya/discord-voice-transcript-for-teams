@@ -1,4 +1,4 @@
-### A Discord Bot that listens to a voice channel, transcribes the audio and assigns tasks to the users.
+# A Discord Bot that listens to a voice channel, transcribes the audio and assigns tasks to the users.
 
 Working in startups and small teams on discord, I often found myself in the situation where I had to take notes during a meeting. This is possible on google meet and other services using otter.ai, fireflies.ai and other services. But there's nothing for discord.
 
